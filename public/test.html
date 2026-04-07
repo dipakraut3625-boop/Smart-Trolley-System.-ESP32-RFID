@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Test Create Bill</h2>
+
+<button onclick="createBill()">Create Bill</button>
+
+<p id="result"></p>
+
+<script>
+function createBill(){
+
+  fetch("/api/create-bill", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      items: [
+        { name: "Milk", qty: 1, price: 45 },
+        { name: "Bread", qty: 2, price: 30 }
+      ]
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("result").innerText =
+      "Bill Created: " + data.url;
+
+    window.open(data.url); // auto open bill page
+  });
+
+}
+</script>
+
+</body>
+</html>

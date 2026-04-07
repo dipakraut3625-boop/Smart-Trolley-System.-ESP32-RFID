@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Bill</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI';
+      background: linear-gradient(135deg,#020617,#0f172a);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      width: 380px;
+      background: rgba(30,41,59,0.6);
+      backdrop-filter: blur(15px);
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      animation: fade 0.8s ease;
+    }
+
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+
+    .info {
+      margin: 10px 0;
+      color: #cbd5f5;
+    }
+
+    .items {
+      margin-top: 15px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .total {
+      margin-top: 10px;
+      text-align: right;
+      color: #22c55e;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 12px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #22c55e;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:disabled {
+      background: gray;
+    }
+
+    button:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    .warning {
+      color: red;
+      display: none;
+      margin-top: 5px;
+    }
+
+    .success {
+      text-align: center;
+      margin-top: 10px;
+      color: #22c55e;
+      display: none;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fade {
+      from {opacity:0; transform:translateY(20px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>🛒 Smart Bill</h1>
+
+  <div id="billId" class="info"></div>
+  <div id="date" class="info"></div>
+
+  <div class="items" id="items"></div>
+
+  <div id="subtotal" class="total"></div>
+  <div id="gst" class="total"></div>
+  <div id="total" class="total"></div>
+
+  <!-- 🔥 NEW -->
+  <input id="name" placeholder="Enter Customer Name">
+
+  <input id="phone" placeholder="Enter WhatsApp number">
+
+  <div id="warning" class="warning"></div>
+
+  <button id="sendBtn" onclick="send()">Send Bill</button>
+
+  <div class="success" id="msg">✅ Bill Sent Successfully!</div>
+</div>
+
+<script>
+const id = window.location.pathname.split("/").pop();
+
+fetch(`/api/bill/${id}`)
+.then(res => res.json())
+.then(data => {
+
+  document.getElementById("billId").innerText = "Bill ID: " + data.id;
+  document.getElementById("date").innerText = new Date(data.time).toLocaleString();
+
+  let subtotal = 0;
+
+  data.items.forEach(i => {
+    let mrp = i.price;
+    let mart = mrp * 0.95;
+    let total = mart * i.qty;
+
+    document.getElementById("items").innerHTML += `
+      <div class="item">
+        <span>${i.name} x${i.qty}</span>
+        <span>₹${total.toFixed(2)}</span>
+      </div>
+    `;
+
+    subtotal += total;
+  });
+
+  let gst = subtotal * 0.05;
+  let total = subtotal + gst;
+
+  document.getElementById("subtotal").innerText = "Subtotal: ₹" + subtotal.toFixed(2);
+  document.getElementById("gst").innerText = "GST: ₹" + gst.toFixed(2);
+  document.getElementById("total").innerText = "Total: ₹" + total.toFixed(2);
+});
+
+function send(){
+
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+
+  const warning = document.getElementById("warning");
+  const btn = document.getElementById("sendBtn");
+
+  if(name === ""){
+    warning.innerText = "⚠ Enter customer name";
+    warning.style.display = "block";
+    return;
+  }
+
+  if(phone === ""){
+    warning.innerText = "⚠ Enter WhatsApp number";
+    warning.style.display = "block";
+    return;
+  }
+
+  if(!/^[0-9]{10}$/.test(phone)){
+    warning.innerText = "⚠ Invalid number";
+    warning.style.display = "block";
+    return;
+  }
+
+  warning.style.display = "none";
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Sending...`;
+
+  fetch("/api/send-whatsapp",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      id: id,
+      phone: phone,
+      name: name
+    })
+  })
+  .then(()=>{
+    document.getElementById("msg").style.display="block";
+
+    // 🔥 REDIRECT
+    setTimeout(() => {
+      window.location.href = "/admin";
+    }, 1500);
+  })
+  .catch(()=>{
+    warning.innerText = "❌ Failed to send";
+    warning.style.display = "block";
+  })
+  .finally(()=>{
+    btn.disabled = false;
+    btn.innerHTML = "Send Bill";
+  });
+}
+</script>
+
+</body>
+</html>
