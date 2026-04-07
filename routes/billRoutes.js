@@ -25,29 +25,34 @@ router.post("/create-bill", async (req, res) => {
 
     // ✅ SAVE BILL
     bills.push(bill);
-
     console.log("Saved Bills:", bills);
 
-    // ✅ GENERATE PDF
-    const filePath = await generatePDF(bill);
-    console.log("PDF Generated:", filePath);
+    // ✅ SAFE PDF
+    let filePath = null;
+
+    try {
+      filePath = await generatePDF(bill);
+      console.log("PDF Generated:", filePath);
+    } catch (pdfErr) {
+      console.log("PDF ERROR:", pdfErr);
+    }
 
     // ✅ LIVE UPDATE
     req.app.get("io").emit("new-bill", bill);
 
+    // ✅ RESPONSE (MUST)
     res.json({
       success: true,
       billId: bill.id,
       url: `/bill/${bill.id}`,
-      pdf: `/bills/bill-${bill.id}.pdf`
+      pdf: filePath ? `/bills/bill-${bill.id}.pdf` : null
     });
 
   } catch (err) {
-    console.log(err);
+    console.log("MAIN ERROR:", err);
     res.status(500).json({ error: "Failed to create bill" });
   }
 });
-
 /* =========================
    GET SINGLE BILL
 ========================= */
