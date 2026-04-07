@@ -2,6 +2,25 @@
 <html>
 <head>
   <title>Test Create Bill</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+  </style>
 </head>
 <body>
 
@@ -9,45 +28,58 @@
 
 <button onclick="createBill()">Create Bill</button>
 
-<p id="result"></p>
+<div id="result"></div>
 
 <script>
-function createBill() {
+async function createBill() {
 
-  fetch("/api/create-bill", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      items: [
-        { name: "Milk", qty: 1, price: 45 },
-        { name: "Bread", qty: 2, price: 30 }
-      ]
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
+  const result = document.getElementById("result");
+  result.innerText = "⏳ Creating bill...";
 
-    console.log("RESPONSE:", data);
+  try {
 
-    if (!data.success) {
-      document.getElementById("result").innerText = "Error!";
+    const response = await fetch("/api/create-bill", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items: [
+          { name: "Milk", qty: 1, price: 45 },
+          { name: "Bread", qty: 2, price: 30 }
+        ]
+      })
+    });
+
+    // ❌ if server error
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("SERVER ERROR:", text);
+      result.innerText = "❌ Server Error (check backend)";
       return;
     }
 
-    // ✅ FIX HERE
-    document.getElementById("result").innerText =
-      "Bill Created: " + data.billId;
+    const data = await response.json();
+    console.log("SUCCESS:", data);
 
-    // 🔥 AUTO OPEN BILL PAGE
-    window.location.href = data.url;
+    // ❌ safety check
+    if (!data.success) {
+      result.innerText = "❌ Failed to create bill";
+      return;
+    }
 
-  })
-  .catch(err => {
-    console.log(err);
-    document.getElementById("result").innerText = "Failed!";
-  });
+    // ✅ SUCCESS
+    result.innerText = "✅ Bill Created: " + data.billId;
+
+    // 🔥 redirect after 1 sec
+    setTimeout(() => {
+      window.location.href = data.url;
+    }, 1000);
+
+  } catch (err) {
+    console.error("FETCH ERROR:", err);
+    result.innerText = "❌ Network Error";
+  }
 }
 </script>
 
