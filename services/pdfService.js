@@ -37,7 +37,13 @@ function generatePDF(bill){
     // ================= BILL INFO =================
     doc.moveDown(0.5);
 
-    doc.text(`Date & Time: ${new Date(bill.time).toLocaleString()}`, center);
+    doc.text(
+  "Date & Time: " +
+  new Date(bill.time).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata"
+  }),
+  { align: "center" }
+);
     doc.text(`Bill No: ${bill.id}`, center);
 
     doc.moveDown(0.5);
