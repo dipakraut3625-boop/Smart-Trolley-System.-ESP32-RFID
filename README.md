@@ -44,7 +44,3 @@ This project is an IoT-based smart shopping system that automates billing using 
 
 
 ---
-
-## 👨‍💻 Author
-
-Dipak Raut
