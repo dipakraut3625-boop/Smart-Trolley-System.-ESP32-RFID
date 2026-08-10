@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const connectDB = require("./config/db");
+const mongoose = require("mongoose");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
