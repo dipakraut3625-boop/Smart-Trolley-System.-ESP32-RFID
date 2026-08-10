@@ -119,7 +119,10 @@ main{min-width:0;padding:28px 34px 70px}.topbar{display:flex;justify-content:spa
 <script>
 
 const $=id=>document.getElementById(id);
-const money=n=>"₹"+(Number(n)||0).toFixed(2);
+const money = n => {
+    const value = Number(n);
+    return "₹" + (Number.isFinite(value) ? value.toFixed(2) : "0.00");
+};
 const total=b=>Array.isArray(b.items)?b.items.reduce((s,i)=>s+(Number(i.price)||0)*(Number(i.qty)||0),0):0;
 const count=b=>Array.isArray(b.items)?b.items.reduce((s,i)=>s+(Number(i.qty)||0),0):0;
 const date=v=>v?new Date(v).toLocaleString([],{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
