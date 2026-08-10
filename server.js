@@ -1,64 +1,152 @@
 require("dotenv").config();
 
 const express = require("express");
+const connectDB = require("./config/db");
 const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const fs = require("fs");
+
+// ================= BILLS DIRECTORY =================
+
 const billsDir = path.join(__dirname, "bills");
 
 if (!fs.existsSync(billsDir)) {
   fs.mkdirSync(billsDir);
 }
 
+
 // ================= MIDDLEWARE =================
+
 app.use(express.json());
 
+
+// ================= STATIC FILES =================
+
 // Serve PDF bills
-app.use("/bills", express.static(path.join(__dirname, "bills")));
+app.use(
+  "/bills",
+  express.static(path.join(__dirname, "bills"))
+);
 
 // Serve frontend files
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  express.static(path.join(__dirname, "public"))
+);
 
-// Attach socket to app
+
+// ================= SOCKET.IO =================
+
 app.set("io", io);
 
+
 // ================= ROUTES =================
+
 const billRoutes = require("./routes/billRoutes");
+
 app.use("/api", billRoutes);
 
-// Home
+
+// ================= HOME =================
+
 app.get("/", (req, res) => {
   res.send("🚀 Smart Trolley Backend Running");
 });
 
-// Bill page
+
+// ================= BILL PAGE =================
+
 app.get("/bill/:id", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "bill.html"));
+  res.sendFile(
+    path.join(__dirname, "public", "bill.html")
+  );
 });
 
-// Admin dashboard
+
+// ================= ADMIN DASHBOARD =================
+
 app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
+  res.sendFile(
+    path.join(__dirname, "public", "admin.html")
+  );
 });
 
-// ================= SOCKET.IO =================
+app.get("/bills", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "bills.html"));
+});
+
+app.get("/trolleys", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "trolleys.html"));
+});
+
+app.get("/analytics", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "analytics.html"));
+});
+
+
+// ================= SOCKET.IO CONNECTION =================
+
 io.on("connection", (socket) => {
-  console.log("🟢 New client connected:", socket.id);
+
+  console.log(
+    "🟢 New client connected:",
+    socket.id
+  );
 
   socket.on("disconnect", () => {
-    console.log("🔴 Client disconnected:", socket.id);
+
+    console.log(
+      "🔴 Client disconnected:",
+      socket.id
+    );
+
   });
+
 });
 
-// ================= SERVER =================
+
+// ================= DATABASE + SERVER =================
+
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+async function startServer() {
+
+  try {
+
+    // Connect MongoDB first
+    await connectDB();
+
+    // Start server only after MongoDB connects
+    server.listen(PORT, () => {
+
+      console.log(
+        `🚀 Server running on port ${PORT}`
+      );
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "🔴 Server startup failed:"
+    );
+
+    console.error(
+      error.message
+    );
+
+    process.exit(1);
+
+  }
+
+}
+
+
+// ================= START =================
+
+startServer();
