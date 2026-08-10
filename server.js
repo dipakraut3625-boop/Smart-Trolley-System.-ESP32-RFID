@@ -119,7 +119,7 @@ async function startServer() {
   try {
 
     // Connect MongoDB first
-    await connectDB();
+    await mongoose.connect(process.env.MONGODB_URI);
 
     // Start server only after MongoDB connects
     server.listen(PORT, () => {
